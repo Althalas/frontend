@@ -1,0 +1,27 @@
+<div class="map-container">
+  <div class="map-header">
+    <h1>Carte des bornes</h1>
+    <p>Explorez toutes les bornes de recharge disponibles</p>
+  </div>
+
+  <div class="map-wrapper">
+    <div *ngIf="isLoading" class="loading-overlay">
+      <mat-spinner diameter="50"></mat-spinner>
+      <p>Chargement des bornes...</p>
+    </div>
+    <div id="map" class="map"></div>
+  </div>
+
+  <div class="map-info">
+    <mat-card>
+      <mat-card-content>
+        <div class="info-stats">
+          <div class="stat-item">
+            <span class="stat-value">{{ stations.length }}</span>
+            <span class="stat-label">Bornes disponibles</span>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>

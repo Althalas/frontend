@@ -8,7 +8,8 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { StationsService, Station } from '@core/services/stations.service';
+import { StationsService, Station, getStationAddress, getStationPower, getStationPrice } from '@core/services/stations.service';
+import { AuthService } from '@core/services/auth.service';
 
 @Component({
   selector: 'app-my-stations',
@@ -28,10 +29,12 @@ import { StationsService, Station } from '@core/services/stations.service';
     <div class="my-stations-container">
       <div class="page-header">
         <h1>Mes bornes de recharge</h1>
-        <button mat-raised-button color="primary">
+        @if (!isAdmin()) {
+        <button mat-raised-button color="primary" routerLink="/stations/new">
           <mat-icon>add</mat-icon>
           Ajouter une borne
         </button>
+        }
       </div>
 
       @if (isLoading) {
@@ -42,15 +45,20 @@ import { StationsService, Station } from '@core/services/stations.service';
       <mat-card class="empty-state">
         <mat-card-content>
           <mat-icon>ev_station</mat-icon>
+          @if (isAdmin()) {
+          <h2>Aucune borne disponible</h2>
+          <p>Les administrateurs ne peuvent pas créer de bornes.</p>
+          } @else {
           <h2>Aucune borne enregistrée</h2>
           <p>
             Commencez à gagner de l'argent en partageant votre borne de recharge
             avec d'autres utilisateurs.
           </p>
-          <button mat-raised-button color="primary">
+          <button mat-raised-button color="primary" routerLink="/stations/new">
             <mat-icon>add</mat-icon>
             Ajouter ma première borne
           </button>
+          }
         </mat-card-content>
       </mat-card>
       } @else {
@@ -59,27 +67,18 @@ import { StationsService, Station } from '@core/services/stations.service';
         <mat-card class="station-card">
           <mat-card-content>
             <div class="station-main">
-              @if (station.photos && station.photos.length > 0) {
-              <img
-                [src]="station.photos[0]"
-                [alt]="station.name"
-                class="station-image"
-              />
-              } @else {
               <div class="station-image-placeholder">
                 <mat-icon>ev_station</mat-icon>
               </div>
-              }
 
               <div class="station-info">
                 <h3>{{ station.name }}</h3>
-                <p class="address">{{ station.address }}</p>
+                <p class="address">{{ getAddress(station) }}</p>
                 <div class="specs">
-                  <mat-chip>{{ station.power }} kW</mat-chip>
-                  <mat-chip>{{ station.connector }}</mat-chip>
+                  <mat-chip>{{ getPower(station) | number: '1.1-1' }} kVA</mat-chip>
                 </div>
                 <p class="price">
-                  {{ station.pricePerKwh | number: '1.2-2' }} €/kWh
+                  {{ getPrice(station) | number: '1.2-2' }} €/h
                 </p>
               </div>
             </div>
@@ -93,15 +92,15 @@ import { StationsService, Station } from '@core/services/stations.service';
                   <mat-icon>visibility</mat-icon>
                   <span>Voir</span>
                 </button>
-                <button mat-menu-item>
+                <button mat-menu-item [routerLink]="['/stations', station.id, 'edit']">
                   <mat-icon>edit</mat-icon>
                   <span>Modifier</span>
                 </button>
-                <button mat-menu-item>
+                <button mat-menu-item disabled>
                   <mat-icon>calendar_today</mat-icon>
                   <span>Disponibilités</span>
                 </button>
-                <button mat-menu-item>
+                <button mat-menu-item disabled>
                   <mat-icon>bar_chart</mat-icon>
                   <span>Statistiques</span>
                 </button>
@@ -129,14 +128,6 @@ import { StationsService, Station } from '@core/services/stations.service';
                 >
                 <span class="stat-label">Revenus</span>
               </div>
-              @if (station.avgRating) {
-              <div class="stat">
-                <span class="stat-value"
-                  >{{ station.avgRating | number: '1.1-1' }}</span
-                >
-                <span class="stat-label">Note</span>
-              </div>
-              }
             </div>
           </mat-card-footer>
         </mat-card>
@@ -309,9 +300,15 @@ import { StationsService, Station } from '@core/services/stations.service';
 export class MyStationsComponent implements OnInit {
   private stationsService = inject(StationsService);
   private snackBar = inject(MatSnackBar);
+  private authService = inject(AuthService);
 
   stations: Station[] = [];
   isLoading = false;
+  stationStats = new Map<number, { bookings: number; revenue: number }>();
+
+  isAdmin(): boolean {
+    return this.authService.isAdmin();
+  }
 
   ngOnInit(): void {
     this.loadStations();
@@ -322,6 +319,13 @@ export class MyStationsComponent implements OnInit {
     this.stationsService.getMyStations().subscribe({
       next: (stations) => {
         this.stations = stations;
+        // Initialize stats with consistent values
+        stations.forEach((station) => {
+          this.stationStats.set(station.id, {
+            bookings: 0,
+            revenue: 0,
+          });
+        });
         this.isLoading = false;
       },
       error: () => {
@@ -331,13 +335,23 @@ export class MyStationsComponent implements OnInit {
   }
 
   getBookingsCount(station: Station): number {
-    // TODO: Get from API
-    return Math.floor(Math.random() * 50);
+    return this.stationStats.get(station.id)?.bookings || 0;
   }
 
   getRevenue(station: Station): number {
-    // TODO: Get from API
-    return Math.floor(Math.random() * 500);
+    return this.stationStats.get(station.id)?.revenue || 0;
+  }
+
+  getAddress(station: Station): string {
+    return getStationAddress(station);
+  }
+
+  getPower(station: Station): number {
+    return getStationPower(station);
+  }
+
+  getPrice(station: Station): number {
+    return getStationPrice(station);
   }
 
   deleteStation(station: Station): void {

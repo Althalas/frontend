@@ -7,7 +7,10 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '@env/environment';
 import { BookingsService, Booking } from '@core/services/bookings.service';
+import { getStationAddress } from '@core/services/stations.service';
 
 @Component({
   selector: 'app-bookings-list',
@@ -52,7 +55,7 @@ import { BookingsService, Booking } from '@core/services/bookings.service';
                   <div class="booking-info">
                     <div class="booking-station">
                       <h3>{{ booking.station?.name || 'Borne' }}</h3>
-                      <p>{{ booking.station?.address }}</p>
+                      <p>{{ booking.station ? getStationAddressHelper(booking.station) : '' }}</p>
                     </div>
                     <div class="booking-datetime">
                       <div class="date">
@@ -81,7 +84,7 @@ import { BookingsService, Booking } from '@core/services/bookings.service';
                   <button mat-button [routerLink]="['/bookings', booking.id]">
                     Détails
                   </button>
-                  @if (booking.status === 'PENDING' || booking.status === 'CONFIRMED') {
+                  @if (booking.status === 'pending' || booking.status === 'accepted') {
                   <button mat-button color="warn" (click)="cancelBooking(booking.id)">
                     Annuler
                   </button>
@@ -113,7 +116,7 @@ import { BookingsService, Booking } from '@core/services/bookings.service';
                   <div class="booking-info">
                     <div class="booking-station">
                       <h3>{{ booking.station?.name || 'Borne' }}</h3>
-                      <p>{{ booking.station?.address }}</p>
+                      <p>{{ booking.station ? getStationAddressHelper(booking.station) : '' }}</p>
                     </div>
                     <div class="booking-datetime">
                       <div class="date">
@@ -135,7 +138,11 @@ import { BookingsService, Booking } from '@core/services/bookings.service';
                   <button mat-button [routerLink]="['/bookings', booking.id]">
                     Détails
                   </button>
-                  @if (booking.status === 'COMPLETED') {
+                  @if (booking.status === 'completed') {
+                  <button mat-raised-button color="primary" (click)="downloadReceipt(booking.id)">
+                    <mat-icon>download</mat-icon>
+                    Télécharger le reçu
+                  </button>
                   <button mat-button color="accent">
                     Laisser un avis
                   </button>
@@ -256,14 +263,14 @@ import { BookingsService, Booking } from '@core/services/bookings.service';
         color: #e65100 !important;
       }
 
-      .status-confirmed {
+      .status-accepted {
         background-color: #e3f2fd !important;
         color: #1565c0 !important;
       }
 
-      .status-in_progress {
-        background-color: #e8f5e9 !important;
-        color: #2e7d32 !important;
+      .status-refused {
+        background-color: #ffebee !important;
+        color: #c62828 !important;
       }
 
       .status-completed {
@@ -272,8 +279,8 @@ import { BookingsService, Booking } from '@core/services/bookings.service';
       }
 
       .status-cancelled {
-        background-color: #ffebee !important;
-        color: #c62828 !important;
+        background-color: #ffcdd2 !important;
+        color: #b71c1c !important;
       }
 
       mat-card-actions {
@@ -297,6 +304,8 @@ import { BookingsService, Booking } from '@core/services/bookings.service';
 })
 export class BookingsListComponent implements OnInit {
   private bookingsService = inject(BookingsService);
+  private http = inject(HttpClient);
+  private apiUrl = environment.apiUrl;
 
   upcomingBookings: Booking[] = [];
   pastBookings: Booking[] = [];
@@ -312,10 +321,10 @@ export class BookingsListComponent implements OnInit {
       next: (bookings) => {
         const now = new Date();
         this.upcomingBookings = bookings.filter(
-          (b) => new Date(b.endTime) > now && b.status !== 'CANCELLED'
+          (b) => new Date(b.endTime) > now && b.status !== 'cancelled' && b.status !== 'refused'
         );
         this.pastBookings = bookings.filter(
-          (b) => new Date(b.endTime) <= now || b.status === 'CANCELLED'
+          (b) => new Date(b.endTime) <= now || b.status === 'cancelled' || b.status === 'refused'
         );
         this.isLoading = false;
       },
@@ -331,16 +340,20 @@ export class BookingsListComponent implements OnInit {
 
   getStatusLabel(status: string): string {
     const labels: Record<string, string> = {
-      PENDING: 'En attente',
-      CONFIRMED: 'Confirmée',
-      IN_PROGRESS: 'En cours',
-      COMPLETED: 'Terminée',
-      CANCELLED: 'Annulée',
+      pending: 'En attente',
+      accepted: 'Acceptée',
+      refused: 'Refusée',
+      completed: 'Terminée',
+      cancelled: 'Annulée',
     };
     return labels[status] || status;
   }
 
-  cancelBooking(id: string): void {
+  getStationAddressHelper(station: any): string {
+    return getStationAddress(station);
+  }
+
+  cancelBooking(id: number): void {
     if (confirm('Êtes-vous sûr de vouloir annuler cette réservation ?')) {
       this.bookingsService.cancel(id).subscribe({
         next: () => {
@@ -348,5 +361,9 @@ export class BookingsListComponent implements OnInit {
         },
       });
     }
+  }
+
+  downloadReceipt(id: number): void {
+    window.open(`${this.apiUrl}/bookings/${id}/receipt`, '_blank');
   }
 }

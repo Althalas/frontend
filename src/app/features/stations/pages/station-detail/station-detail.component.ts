@@ -8,7 +8,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDividerModule } from '@angular/material/divider';
-import { StationsService, Station } from '@core/services/stations.service';
+import { StationsService, Station, getStationAddress, getStationPower, getStationPrice } from '@core/services/stations.service';
 
 @Component({
   selector: 'app-station-detail',
@@ -41,30 +41,10 @@ import { StationsService, Station } from '@core/services/stations.service';
 
       <div class="station-content">
         <div class="station-gallery">
-          @if (station.photos && station.photos.length > 0) {
-          <img
-            [src]="station.photos[selectedPhotoIndex]"
-            [alt]="station.name"
-            class="main-photo"
-          />
-          @if (station.photos.length > 1) {
-          <div class="photo-thumbnails">
-            @for (photo of station.photos; track photo; let i = $index) {
-            <img
-              [src]="photo"
-              [alt]="station.name + ' - Photo ' + (i + 1)"
-              [class.active]="i === selectedPhotoIndex"
-              (click)="selectedPhotoIndex = i"
-            />
-            }
-          </div>
-          }
-          } @else {
           <div class="no-photo">
             <mat-icon>ev_station</mat-icon>
             <p>Aucune photo disponible</p>
           </div>
-          }
         </div>
 
         <div class="station-info">
@@ -74,7 +54,7 @@ import { StationsService, Station } from '@core/services/stations.service';
                 <mat-icon>location_on</mat-icon>
                 <div>
                   <strong>Adresse</strong>
-                  <p>{{ station.address }}</p>
+                  <p>{{ getAddress(station) }}</p>
                 </div>
               </div>
 
@@ -84,27 +64,7 @@ import { StationsService, Station } from '@core/services/stations.service';
                 <mat-icon>power</mat-icon>
                 <div>
                   <strong>Puissance</strong>
-                  <p>{{ station.power }} kW</p>
-                </div>
-              </div>
-
-              <mat-divider></mat-divider>
-
-              <div class="info-row">
-                <mat-icon>electrical_services</mat-icon>
-                <div>
-                  <strong>Connecteur</strong>
-                  <p>{{ station.connector }}</p>
-                </div>
-              </div>
-
-              <mat-divider></mat-divider>
-
-              <div class="info-row">
-                <mat-icon>bolt</mat-icon>
-                <div>
-                  <strong>Type</strong>
-                  <p>{{ station.type }}</p>
+                  <p>{{ getPower(station) | number: '1.1-1' }} kVA</p>
                 </div>
               </div>
 
@@ -114,20 +74,9 @@ import { StationsService, Station } from '@core/services/stations.service';
                 <mat-icon>payments</mat-icon>
                 <div>
                   <strong>Tarif</strong>
-                  <p class="price">{{ station.pricePerKwh | number: '1.2-2' }} € / kWh</p>
+                  <p class="price">{{ getPrice(station) | number: '1.2-2' }} € / h</p>
                 </div>
               </div>
-
-              @if (station.avgRating) {
-              <mat-divider></mat-divider>
-              <div class="info-row">
-                <mat-icon>star</mat-icon>
-                <div>
-                  <strong>Note moyenne</strong>
-                  <p>{{ station.avgRating | number: '1.1-1' }} / 5</p>
-                </div>
-              </div>
-              }
             </mat-card-content>
 
             <mat-card-actions>
@@ -318,16 +267,15 @@ export class StationDetailComponent implements OnInit {
 
   station: Station | null = null;
   isLoading = true;
-  selectedPhotoIndex = 0;
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
-      this.loadStation(id);
+      this.loadStation(Number(id));
     }
   }
 
-  loadStation(id: string): void {
+  loadStation(id: number): void {
     this.stationsService.getById(id).subscribe({
       next: (station) => {
         this.station = station;
@@ -338,6 +286,18 @@ export class StationDetailComponent implements OnInit {
         this.router.navigate(['/stations']);
       },
     });
+  }
+
+  getAddress(station: Station): string {
+    return getStationAddress(station);
+  }
+
+  getPower(station: Station): number {
+    return getStationPower(station);
+  }
+
+  getPrice(station: Station): number {
+    return getStationPrice(station);
   }
 
   goBack(): void {

@@ -118,13 +118,50 @@ import { AuthService } from '@core/services/auth.service';
         align-items: center;
         min-height: calc(100vh - 64px);
         padding: 20px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 50%, #00796b 100%);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .login-container::before {
+        content: '';
+        position: absolute;
+        width: 300px;
+        height: 300px;
+        background: radial-gradient(circle, rgba(76, 175, 80, 0.3) 0%, transparent 70%);
+        border-radius: 50%;
+        top: -100px;
+        right: -100px;
+        animation: float 6s ease-in-out infinite;
+      }
+
+      .login-container::after {
+        content: '';
+        position: absolute;
+        width: 400px;
+        height: 400px;
+        background: radial-gradient(circle, rgba(33, 150, 243, 0.2) 0%, transparent 70%);
+        border-radius: 50%;
+        bottom: -150px;
+        left: -150px;
+        animation: float 8s ease-in-out infinite reverse;
+      }
+
+      @keyframes float {
+        0%, 100% {
+          transform: translate(0, 0);
+        }
+        50% {
+          transform: translate(20px, 20px);
+        }
       }
 
       .login-card {
         width: 100%;
         max-width: 400px;
         padding: 20px;
+        position: relative;
+        z-index: 1;
       }
 
       mat-card-header {

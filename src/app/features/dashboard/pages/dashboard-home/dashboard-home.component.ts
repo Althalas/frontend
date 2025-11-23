@@ -56,16 +56,6 @@ import { BookingsService, Booking } from '@core/services/bookings.service';
             </div>
           </mat-card-content>
         </mat-card>
-
-        <mat-card class="stat-card">
-          <mat-card-content>
-            <mat-icon>eco</mat-icon>
-            <div class="stat-info">
-              <span class="stat-value">{{ co2Saved | number: '1.0-0' }} kg</span>
-              <span class="stat-label">CO₂ économisés</span>
-            </div>
-          </mat-card-content>
-        </mat-card>
       </div>
 
       <div class="quick-actions">
@@ -92,14 +82,19 @@ import { BookingsService, Booking } from '@core/services/bookings.service';
             </mat-card-content>
           </mat-card>
 
-          @if (isHost) {
+          <mat-card class="action-card" routerLink="/stations/new">
+            <mat-card-content>
+              <mat-icon>add_circle</mat-icon>
+              <span>Ajouter une borne</span>
+            </mat-card-content>
+          </mat-card>
+
           <mat-card class="action-card" routerLink="/dashboard/my-stations">
             <mat-card-content>
               <mat-icon>ev_station</mat-icon>
               <span>Mes bornes</span>
             </mat-card-content>
           </mat-card>
-          }
         </div>
       </div>
 
@@ -169,7 +164,7 @@ import { BookingsService, Booking } from '@core/services/bookings.service';
         font-size: 40px;
         width: 40px;
         height: 40px;
-        color: #667eea;
+        color: var(--primary-color);
       }
 
       .stat-info {
@@ -223,7 +218,7 @@ import { BookingsService, Booking } from '@core/services/bookings.service';
         font-size: 36px;
         width: 36px;
         height: 36px;
-        color: #667eea;
+        color: var(--accent-color);
       }
 
       .bookings-list {
@@ -276,18 +271,15 @@ export class DashboardHomeComponent implements OnInit {
   private bookingsService = inject(BookingsService);
 
   userName = '';
-  isHost = false;
   upcomingBookingsCount = 0;
   totalEnergy = 0;
   totalSpent = 0;
-  co2Saved = 0;
   recentBookings: Booking[] = [];
 
   ngOnInit(): void {
     const user = this.authService.getCurrentUser();
     if (user) {
       this.userName = user.firstName || user.email;
-      this.isHost = user.role === 'owner';
     }
 
     this.loadBookings();
@@ -300,26 +292,20 @@ export class DashboardHomeComponent implements OnInit {
 
         // Calculate stats
         this.upcomingBookingsCount = bookings.filter(
-          (b) => new Date(b.endTime) > now && b.status !== 'CANCELLED'
+          (b) => new Date(b.endTime) > now && b.status !== 'cancelled'
         ).length;
 
         const completedBookings = bookings.filter(
-          (b) => b.status === 'COMPLETED'
+          (b) => b.status === 'completed'
         );
 
-        this.totalEnergy = completedBookings.reduce(
-          (sum, b) => sum + b.energyRequested,
-          0
-        );
+        // Total energy not available, estimate from totalPrice
+        this.totalEnergy = 0; // Not tracked
 
         this.totalSpent = completedBookings.reduce(
           (sum, b) => sum + b.totalPrice,
           0
         );
-
-        // Approximate CO2 savings (vs petrol car ~150g/km, EV ~50g/km)
-        // Assuming 5km per kWh
-        this.co2Saved = this.totalEnergy * 5 * 0.1;
 
         // Get recent bookings
         this.recentBookings = bookings

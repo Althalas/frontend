@@ -21,6 +21,7 @@ import { MatIconModule } from '@angular/material/icon';
             <li><a routerLink="/stations">Stations</a></li>
             <li><a routerLink="/dashboard">Dashboard</a></li>
             <li><a routerLink="/bookings">Réservations</a></li>
+            <li><a routerLink="/dashboard/my-stations">Mes bornes</a></li>
           </ul>
         </div>
 
@@ -56,10 +57,11 @@ import { MatIconModule } from '@angular/material/icon';
   `,
   styles: [`
     .footer {
-      background-color: #263238;
-      color: #eceff1;
+      background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%);
+      color: #e8f5e9;
       padding: 40px 20px 20px;
       margin-top: auto;
+      box-shadow: 0 -4px 20px rgba(76, 175, 80, 0.1);
     }
 
     .footer-container {
@@ -76,17 +78,19 @@ import { MatIconModule } from '@angular/material/icon';
         margin: 0 0 16px 0;
         font-size: 1.5rem;
         color: #fff;
+        font-weight: 600;
       }
 
       h4 {
         margin: 0 0 12px 0;
         font-size: 1.1rem;
-        color: #fff;
+        color: #a5d6a7;
+        font-weight: 500;
       }
 
       p {
         margin: 0;
-        color: #b0bec5;
+        color: #c8e6c9;
         line-height: 1.6;
       }
 
@@ -99,12 +103,12 @@ import { MatIconModule } from '@angular/material/icon';
           margin-bottom: 8px;
 
           a {
-            color: #b0bec5;
+            color: #c8e6c9;
             text-decoration: none;
             transition: color 0.2s;
 
             &:hover {
-              color: #fff;
+              color: #00e676;
             }
           }
         }
@@ -116,11 +120,12 @@ import { MatIconModule } from '@angular/material/icon';
       gap: 12px;
 
       a {
-        color: #b0bec5;
-        transition: color 0.2s;
+        color: #c8e6c9;
+        transition: all 0.2s;
 
         &:hover {
-          color: #fff;
+          color: #00e676;
+          transform: translateY(-2px);
         }
 
         mat-icon {
@@ -135,12 +140,12 @@ import { MatIconModule } from '@angular/material/icon';
       max-width: 1400px;
       margin: 0 auto;
       padding-top: 20px;
-      border-top: 1px solid #37474f;
+      border-top: 1px solid rgba(165, 214, 167, 0.3);
       text-align: center;
 
       p {
         margin: 0;
-        color: #78909c;
+        color: #a5d6a7;
         font-size: 0.875rem;
       }
     }

@@ -1,0 +1,274 @@
+<div class="container">
+  <h1>Administration</h1>
+
+  <div class="stats-grid">
+    <mat-card>
+      <mat-card-content>
+        <div class="stat">
+          <mat-icon>people</mat-icon>
+          <div class="stat-info">
+            <h2>{{ stats.totalUsers }}</h2>
+            <p>Utilisateurs</p>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card>
+      <mat-card-content>
+        <div class="stat">
+          <mat-icon>ev_station</mat-icon>
+          <div class="stat-info">
+            <h2>{{ stats.totalStations }}</h2>
+            <p>Bornes</p>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card>
+      <mat-card-content>
+        <div class="stat">
+          <mat-icon>calendar_today</mat-icon>
+          <div class="stat-info">
+            <h2>{{ stats.totalReservations }}</h2>
+            <p>Réservations</p>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card>
+      <mat-card-content>
+        <div class="stat">
+          <mat-icon>pending_actions</mat-icon>
+          <div class="stat-info">
+            <h2>{{ stats.pendingReservations }}</h2>
+            <p>Rés. en attente</p>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <mat-card>
+    <mat-card-content>
+      <mat-tab-group>
+        <!-- Users Tab -->
+        <mat-tab label="Utilisateurs ({{ users.length }})">
+          <table mat-table [dataSource]="users" class="full-width">
+            <ng-container matColumnDef="id">
+              <th mat-header-cell *matHeaderCellDef>ID</th>
+              <td mat-cell *matCellDef="let user">{{ user.id }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="name">
+              <th mat-header-cell *matHeaderCellDef>Nom</th>
+              <td mat-cell *matCellDef="let user">
+                {{ user.firstName }} {{ user.lastName }}
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="email">
+              <th mat-header-cell *matHeaderCellDef>Email</th>
+              <td mat-cell *matCellDef="let user">{{ user.email }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="role">
+              <th mat-header-cell *matHeaderCellDef>Rôle</th>
+              <td mat-cell *matCellDef="let user">
+                <mat-chip [class]="'role-' + user.roles[0]">
+                  {{ user.roles[0] }}
+                </mat-chip>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="status">
+              <th mat-header-cell *matHeaderCellDef>Statut</th>
+              <td mat-cell *matCellDef="let user">
+                <mat-chip [class]="user.isValidated ? 'validated' : 'pending'">
+                  {{ user.isValidated ? 'Validé' : 'En attente' }}
+                </mat-chip>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="active">
+              <th mat-header-cell *matHeaderCellDef>Compte</th>
+              <td mat-cell *matCellDef="let user">
+                <mat-chip [color]="user.isActive ? 'primary' : 'warn'" selected>
+                  {{ user.isActive ? 'Actif' : 'Désactivé' }}
+                </mat-chip>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef>Actions</th>
+              <td mat-cell *matCellDef="let user">
+                <button
+                  mat-raised-button
+                  [color]="user.isActive ? 'warn' : 'primary'"
+                  [disabled]="isCurrentUser(user) || hasAdminRole(user)"
+                  [matTooltip]="isCurrentUser(user) ? 'Vous ne pouvez pas bannir votre propre compte' : ''"
+                  (click)="toggleStatus(user)"
+                >
+                  {{ user.isActive ? 'Bannir' : 'Réactiver' }}
+                </button>
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedUserColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedUserColumns"></tr>
+          </table>
+        </mat-tab>
+
+        <!-- Stations Tab -->
+        <mat-tab label="Bornes ({{ stations.length }})" >
+          <table mat-table [dataSource]="stations" class="full-width">
+            <ng-container matColumnDef="id">
+              <th mat-header-cell *matHeaderCellDef>ID</th>
+              <td mat-cell *matCellDef="let station">{{ station.id }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="name">
+              <th mat-header-cell *matHeaderCellDef>Nom</th>
+              <td mat-cell *matCellDef="let station">{{ station.name }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="city">
+              <th mat-header-cell *matHeaderCellDef>Ville</th>
+              <td mat-cell *matCellDef="let station">{{ station.city }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="power">
+              <th mat-header-cell *matHeaderCellDef>Puissance</th>
+              <td mat-cell *matCellDef="let station">{{ station.powerKva }} kVA</td>
+            </ng-container>
+
+            <ng-container matColumnDef="owner">
+              <th mat-header-cell *matHeaderCellDef>Propriétaire</th>
+              <td mat-cell *matCellDef="let station">
+                {{ station.location.user.firstName }} {{ station.location.user.lastName }}
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="status">
+              <th mat-header-cell *matHeaderCellDef>Statut</th>
+              <td mat-cell *matCellDef="let station">
+                <mat-chip [color]="station.deletedAt ? 'warn' : (station.isActive ? 'primary' : 'warn')" selected>
+                  {{ station.deletedAt ? 'Supprimée' : (station.isActive ? 'Active' : 'Inactive') }}
+                </mat-chip>
+                @if (station.deletedAt && station.deletionReason) {
+                  <span [matTooltip]="getDeletionTooltip(station)">ℹ️</span>
+                }
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef>Actions</th>
+              <td mat-cell *matCellDef="let station">
+                <button
+                  mat-raised-button
+                  color="warn"
+                  [disabled]="station.deletedAt"
+                  (click)="deleteStation(station)"
+                >
+                  {{ station.deletedAt ? 'Supprimée' : 'Supprimer' }}
+                </button>
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedStationColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedStationColumns"></tr>
+          </table>
+        </mat-tab>
+
+        <!-- Reservations Tab -->
+        <mat-tab label="Réservations ({{ reservations.length }})">
+          <table mat-table [dataSource]="reservations" class="full-width">
+            <ng-container matColumnDef="id">
+              <th mat-header-cell *matHeaderCellDef>ID</th>
+              <td mat-cell *matCellDef="let reservation">{{ reservation.id }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="station">
+              <th mat-header-cell *matHeaderCellDef>Borne</th>
+              <td mat-cell *matCellDef="let reservation">
+                {{ reservation.chargingStation.name }} ({{ reservation.chargingStation.city }})
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="renter">
+              <th mat-header-cell *matHeaderCellDef>Client</th>
+              <td mat-cell *matCellDef="let reservation">
+                {{ reservation.renter.firstName }} {{ reservation.renter.lastName }}
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="dates">
+              <th mat-header-cell *matHeaderCellDef>Dates</th>
+              <td mat-cell *matCellDef="let reservation">
+                {{ reservation.startDatetime | date: 'short' }} - {{ reservation.endDatetime | date: 'short' }}
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="amount">
+              <th mat-header-cell *matHeaderCellDef>Montant</th>
+              <td mat-cell *matCellDef="let reservation">{{ reservation.totalAmount }}€</td>
+            </ng-container>
+
+            <ng-container matColumnDef="status">
+              <th mat-header-cell *matHeaderCellDef>Statut</th>
+              <td mat-cell *matCellDef="let reservation">
+                <mat-chip [class]="'status-' + reservation.status">
+                  {{ reservation.status }}
+                </mat-chip>
+                @if (reservation.status === 'cancelled' && reservation.cancellationReason) {
+                  <span [matTooltip]="getCancellationTooltip(reservation)">ℹ️</span>
+                }
+                @if (reservation.status === 'refused' && reservation.cancellationReason) {
+                  <span [matTooltip]="getRefusalTooltip(reservation)">ℹ️</span>
+                }
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef>Actions</th>
+              <td mat-cell *matCellDef="let reservation">
+                @if (reservation.status === 'pending') {
+                  <button
+                    mat-raised-button
+                    color="primary"
+                    (click)="approveReservation(reservation)"
+                    style="margin-right: 8px;"
+                  >
+                    Approuver
+                  </button>
+                  <button
+                    mat-raised-button
+                    color="warn"
+                    (click)="rejectReservation(reservation)"
+                  >
+                    Rejeter
+                  </button>
+                }
+                @if (reservation.status === 'completed') {
+                  <button
+                    mat-raised-button
+                    color="accent"
+                    (click)="downloadReceipt(reservation.id)"
+                  >
+                    <mat-icon>download</mat-icon>
+                    Télécharger
+                  </button>
+                }
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedReservationColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedReservationColumns"></tr>
+          </table>
+        </mat-tab>
+      </mat-tab-group>
+    </mat-card-content>
+  </mat-card>
+</div>

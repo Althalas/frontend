@@ -5,23 +5,22 @@ import { environment } from '@env/environment';
 import { Station } from './stations.service';
 
 export interface Booking {
-  id: string;
-  stationId: string;
-  userId: string;
+  id: number;
+  stationId: number;
+  userId: number;
   startTime: string;
   endTime: string;
-  energyRequested: number;
   totalPrice: number;
-  status: 'PENDING' | 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+  status: 'pending' | 'accepted' | 'refused' | 'completed' | 'cancelled';
   station?: Station;
   createdAt: string;
 }
 
 export interface CreateBookingDto {
-  stationId: string;
+  stationId: number;
   startTime: string;
   endTime: string;
-  energyRequested: number;
+  notes?: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -33,7 +32,7 @@ export class BookingsService {
     return this.http.get<Booking[]>(`${this.apiUrl}/my`);
   }
 
-  getById(id: string): Observable<Booking> {
+  getById(id: number): Observable<Booking> {
     return this.http.get<Booking>(`${this.apiUrl}/${id}`);
   }
 
@@ -41,20 +40,16 @@ export class BookingsService {
     return this.http.post<Booking>(this.apiUrl, booking);
   }
 
-  confirm(id: string): Observable<Booking> {
-    return this.http.patch<Booking>(`${this.apiUrl}/${id}/confirm`, {});
+  updateStatus(id: number, status: 'pending' | 'accepted' | 'refused' | 'completed' | 'cancelled'): Observable<Booking> {
+    return this.http.patch<Booking>(`${this.apiUrl}/${id}/status`, { status });
   }
 
-  cancel(id: string): Observable<Booking> {
+  cancel(id: number): Observable<Booking> {
     return this.http.patch<Booking>(`${this.apiUrl}/${id}/cancel`, {});
   }
 
-  complete(id: string): Observable<Booking> {
-    return this.http.patch<Booking>(`${this.apiUrl}/${id}/complete`, {});
-  }
-
-  // For hosts
-  getHostBookings(): Observable<Booking[]> {
-    return this.http.get<Booking[]>(`${this.apiUrl}/host`);
+  // For hosts - get bookings for their stations
+  getStationBookings(stationId: number): Observable<Booking[]> {
+    return this.http.get<Booking[]>(`${this.apiUrl}/station/${stationId}`);
   }
 }

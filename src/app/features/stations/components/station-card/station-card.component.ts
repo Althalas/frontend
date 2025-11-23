@@ -5,7 +5,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
-import { Station } from '@core/services/stations.service';
+import { Station, getStationAddress, getStationPower, getStationPrice } from '@core/services/stations.service';
 
 @Component({
   selector: 'app-station-card',
@@ -20,50 +20,31 @@ import { Station } from '@core/services/stations.service';
   ],
   template: `
     <mat-card class="station-card">
-      @if (station.photos && station.photos.length > 0) {
-      <img
-        mat-card-image
-        [src]="station.photos[0]"
-        [alt]="station.name"
-        class="station-image"
-      />
-      } @else {
       <div class="station-image-placeholder">
         <mat-icon>ev_station</mat-icon>
       </div>
-      }
 
       <mat-card-content>
         <h3 class="station-name">{{ station.name }}</h3>
         <p class="station-address">
           <mat-icon>location_on</mat-icon>
-          {{ station.address }}
+          {{ getAddress() }}
         </p>
 
         <div class="station-specs">
           <mat-chip-set>
             <mat-chip>
               <mat-icon>power</mat-icon>
-              {{ station.power }} kW
-            </mat-chip>
-            <mat-chip>
-              <mat-icon>electrical_services</mat-icon>
-              {{ station.connector }}
+              {{ getPower() | number: '1.1-1' }} kVA
             </mat-chip>
           </mat-chip-set>
         </div>
 
         <div class="station-footer">
           <div class="price">
-            <span class="price-value">{{ station.pricePerKwh | number: '1.2-2' }} €</span>
-            <span class="price-unit">/kWh</span>
+            <span class="price-value">{{ getPrice() | number: '1.2-2' }} €</span>
+            <span class="price-unit">/h</span>
           </div>
-          @if (station.avgRating) {
-          <div class="rating">
-            <mat-icon>star</mat-icon>
-            <span>{{ station.avgRating | number: '1.1-1' }}</span>
-          </div>
-          }
         </div>
       </mat-card-content>
 
@@ -95,7 +76,23 @@ import { Station } from '@core/services/stations.service';
         display: flex;
         align-items: center;
         justify-content: center;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--eco-energy) 100%);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .station-image-placeholder::before {
+        content: '';
+        position: absolute;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        animation: pulse 3s ease-in-out infinite;
+      }
+
+      @keyframes pulse {
+        0%, 100% { transform: scale(1); opacity: 0.5; }
+        50% { transform: scale(1.1); opacity: 0.8; }
       }
 
       .station-image-placeholder mat-icon {
@@ -103,6 +100,8 @@ import { Station } from '@core/services/stations.service';
         width: 64px;
         height: 64px;
         color: white;
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+        z-index: 1;
       }
 
       mat-card-content {
@@ -189,4 +188,16 @@ import { Station } from '@core/services/stations.service';
 })
 export class StationCardComponent {
   @Input({ required: true }) station!: Station;
+
+  getAddress(): string {
+    return getStationAddress(this.station);
+  }
+
+  getPower(): number {
+    return getStationPower(this.station);
+  }
+
+  getPrice(): number {
+    return getStationPrice(this.station);
+  }
 }

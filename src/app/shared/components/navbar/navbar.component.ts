@@ -35,13 +35,27 @@ import { AuthService } from '@core/services/auth.service';
               <mat-icon>dashboard</mat-icon>
               Dashboard
             </a>
+            @if (isAdmin()) {
+              <a mat-button routerLink="/admin" routerLinkActive="active">
+                <mat-icon>admin_panel_settings</mat-icon>
+                Admin
+              </a>
+            }
             <a mat-button routerLink="/stations" routerLinkActive="active">
               <mat-icon>ev_station</mat-icon>
               Stations
             </a>
+            <a mat-button routerLink="/stations/map" routerLinkActive="active">
+              <mat-icon>map</mat-icon>
+              Carte
+            </a>
             <a mat-button routerLink="/bookings" routerLinkActive="active">
               <mat-icon>calendar_today</mat-icon>
               Réservations
+            </a>
+            <a mat-button routerLink="/dashboard/my-stations" routerLinkActive="active">
+              <mat-icon>ev_station</mat-icon>
+              Mes bornes
             </a>
           </nav>
 
@@ -137,6 +151,14 @@ export class NavbarComponent {
 
   isAuthenticated(): boolean {
     return this.authService.isAuthenticated();
+  }
+
+  isOwner(): boolean {
+    return this.authService.isOwner();
+  }
+
+  isAdmin(): boolean {
+    return this.authService.isAdmin();
   }
 
   logout(): void {

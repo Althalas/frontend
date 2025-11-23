@@ -1,0 +1,139 @@
+@import 'maplibre-gl/dist/maplibre-gl.css';
+
+.map-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 1rem;
+}
+
+.map-header {
+  padding: 0 1rem;
+
+  h1 {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: 500;
+    color: #333;
+  }
+
+  p {
+    margin: 0.5rem 0 0;
+    color: #666;
+  }
+}
+
+.map-wrapper {
+  flex: 1;
+  position: relative;
+  min-height: 600px;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.map {
+  width: 100%;
+  height: 100%;
+}
+
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  gap: 1rem;
+
+  p {
+    margin: 0;
+    color: #666;
+    font-size: 1rem;
+  }
+}
+
+.map-info {
+  padding: 0 1rem 1rem;
+
+  mat-card {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.info-stats {
+  display: flex;
+  gap: 2rem;
+  justify-content: center;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 600;
+  color: #1976d2;
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  color: #666;
+  text-align: center;
+}
+
+// Custom marker styles
+:host ::ng-deep .custom-marker {
+  cursor: pointer;
+  transition: transform 0.2s;
+
+  &:hover {
+    transform: scale(1.1);
+  }
+}
+
+// Popup styles
+:host ::ng-deep .maplibregl-popup-content {
+  padding: 0;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+:host ::ng-deep .maplibregl-popup-close-button {
+  font-size: 20px;
+  padding: 8px;
+  color: #666;
+
+  &:hover {
+    color: #333;
+  }
+}
+
+@media (max-width: 768px) {
+  .map-header {
+    h1 {
+      font-size: 1.5rem;
+    }
+  }
+
+  .map-wrapper {
+    min-height: 400px;
+  }
+
+  .info-stats {
+    gap: 1rem;
+  }
+
+  .stat-value {
+    font-size: 1.5rem;
+  }
+}

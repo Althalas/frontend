@@ -52,7 +52,7 @@ import { StationCardComponent } from '../../components/station-card/station-card
           <form [formGroup]="filterForm" class="filters-form">
             <mat-form-field appearance="outline">
               <mat-label>Type de connecteur</mat-label>
-              <mat-select formControlName="connector">
+              <mat-select formControlName="connectorType">
                 <mat-option value="">Tous</mat-option>
                 <mat-option value="TYPE2">Type 2</mat-option>
                 <mat-option value="CCS">CCS</mat-option>
@@ -63,12 +63,12 @@ import { StationCardComponent } from '../../components/station-card/station-card
 
             <mat-form-field appearance="outline">
               <mat-label>Puissance min (kW)</mat-label>
-              <input matInput type="number" formControlName="minPower" />
+              <input matInput type="number" formControlName="minPower" placeholder="Ex: 7" />
             </mat-form-field>
 
             <mat-form-field appearance="outline">
-              <mat-label>Prix max (€/kWh)</mat-label>
-              <input matInput type="number" formControlName="maxPrice" step="0.01" />
+              <mat-label>Prix max (€/h)</mat-label>
+              <input matInput type="number" formControlName="maxPrice" step="0.01" placeholder="Ex: 5.00" />
             </mat-form-field>
 
             <button
@@ -228,7 +228,7 @@ export class StationsListComponent implements OnInit {
   currentPage = 1;
 
   filterForm: FormGroup = this.fb.group({
-    connector: [''],
+    connectorType: [''],
     minPower: [null],
     maxPrice: [null],
   });
@@ -262,6 +262,7 @@ export class StationsListComponent implements OnInit {
       }
     });
 
+    console.log('Applying filters:', filters);
     this.isLoading = true;
     this.stationsService.search(filters).subscribe({
       next: (stations) => {

@@ -4,17 +4,29 @@ import { Observable } from 'rxjs';
 import { environment } from '@env/environment';
 
 export interface Station {
-  id: string;
+  id: number;
   name: string;
-  address: string;
+  city: string;
   latitude: number;
   longitude: number;
-  type: string;
-  power: number;
-  connector: string;
-  pricePerKwh: number;
-  photos: string[];
-  avgRating?: number;
+  powerKva: number;
+  isActive: boolean;
+  instructions?: string;
+  isOnStand?: boolean;
+  location?: {
+    id: number;
+    address: string;
+    postalCode: string;
+    city: string;
+    latitude: number;
+    longitude: number;
+  };
+  pricing?: Array<{
+    id: number;
+    hourlyRate: number;
+    validFrom: string;
+    validTo: string | null;
+  }>;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -38,7 +50,7 @@ export class StationsService {
     return this.http.get<Station[]>(`${this.apiUrl}/search`, { params });
   }
 
-  getById(id: string): Observable<Station> {
+  getById(id: number): Observable<Station> {
     return this.http.get<Station>(`${this.apiUrl}/${id}`);
   }
 
@@ -46,15 +58,28 @@ export class StationsService {
     return this.http.post<Station>(this.apiUrl, station);
   }
 
-  update(id: string, station: Partial<Station>): Observable<Station> {
+  update(id: number, station: Partial<Station>): Observable<Station> {
     return this.http.patch<Station>(`${this.apiUrl}/${id}`, station);
   }
 
-  delete(id: string): Observable<void> {
+  delete(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 
   getMyStations(): Observable<Station[]> {
     return this.http.get<Station[]>(`${this.apiUrl}/my`);
   }
+}
+
+// Helper functions to get station properties
+export function getStationAddress(station: Station): string {
+  return station.location?.address || station.city || '';
+}
+
+export function getStationPower(station: Station): number {
+  return station.powerKva;
+}
+
+export function getStationPrice(station: Station): number {
+  return station.pricing?.[0]?.hourlyRate || 0;
 }

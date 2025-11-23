@@ -17,7 +17,7 @@ import { MatNativeDateModule } from '@angular/material/core';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDividerModule } from '@angular/material/divider';
-import { StationsService, Station } from '@core/services/stations.service';
+import { StationsService, Station, getStationAddress, getStationPower, getStationPrice } from '@core/services/stations.service';
 import { BookingsService } from '@core/services/bookings.service';
 
 @Component({
@@ -55,18 +55,14 @@ import { BookingsService } from '@core/services/bookings.service';
         <mat-card class="station-summary">
           <mat-card-header>
             <mat-card-title>{{ station.name }}</mat-card-title>
-            <mat-card-subtitle>{{ station.address }}</mat-card-subtitle>
+            <mat-card-subtitle>{{ getAddress(station) }}</mat-card-subtitle>
           </mat-card-header>
           <mat-card-content>
             <div class="station-specs">
-              <span><mat-icon>power</mat-icon> {{ station.power }} kW</span>
-              <span
-                ><mat-icon>electrical_services</mat-icon>
-                {{ station.connector }}</span
-              >
+              <span><mat-icon>power</mat-icon> {{ getPower(station) | number: '1.1-1' }} kVA</span>
               <span class="price"
                 ><mat-icon>payments</mat-icon>
-                {{ station.pricePerKwh | number: '1.2-2' }} €/kWh</span
+                {{ getPrice(station) | number: '1.2-2' }} €/h</span
               >
             </div>
           </mat-card-content>
@@ -306,11 +302,11 @@ export class BookingCreateComponent implements OnInit {
   ngOnInit(): void {
     const stationId = this.route.snapshot.paramMap.get('stationId');
     if (stationId) {
-      this.loadStation(stationId);
+      this.loadStation(Number(stationId));
     }
   }
 
-  loadStation(id: string): void {
+  loadStation(id: number): void {
     this.stationsService.getById(id).subscribe({
       next: (station) => {
         this.station = station;
@@ -341,13 +337,26 @@ export class BookingCreateComponent implements OnInit {
   calculateMaxEnergy(): number {
     if (!this.station) return 0;
     const duration = this.calculateDuration();
-    return (this.station.power * duration) / 60;
+    return (this.getPower(this.station) * duration) / 60;
   }
 
   calculateTotal(): number {
     if (!this.station) return 0;
-    const energy = this.bookingForm.get('energyRequested')?.value || 0;
-    return energy * this.station.pricePerKwh;
+    const duration = this.calculateDuration();
+    const hours = duration / 60;
+    return hours * this.getPrice(this.station);
+  }
+
+  getAddress(station: Station): string {
+    return getStationAddress(station);
+  }
+
+  getPower(station: Station): number {
+    return getStationPower(station);
+  }
+
+  getPrice(station: Station): number {
+    return getStationPrice(station);
   }
 
   goBack(): void {
@@ -362,23 +371,41 @@ export class BookingCreateComponent implements OnInit {
     if (this.bookingForm.invalid || !this.station) return;
 
     this.isSubmitting = true;
-    const { date, startTime, endTime, energyRequested } = this.bookingForm.value;
+    const { date, startTime, endTime } = this.bookingForm.value;
 
-    const startDateTime = new Date(date);
+    console.log('Form values:', { date, startTime, endTime });
+
+    // Ensure date is a valid Date object
+    const baseDate = date instanceof Date ? date : new Date(date);
+    console.log('Base date:', baseDate, 'Valid?', !isNaN(baseDate.getTime()));
+
+    // Create start datetime
+    const startDateTime = new Date(baseDate);
     const [startH, startM] = startTime.split(':').map(Number);
     startDateTime.setHours(startH, startM, 0, 0);
 
-    const endDateTime = new Date(date);
+    // Create end datetime
+    const endDateTime = new Date(baseDate);
     const [endH, endM] = endTime.split(':').map(Number);
     endDateTime.setHours(endH, endM, 0, 0);
 
+    // Convert stationId to number
+    const stationId = typeof this.station.id === 'string'
+      ? parseInt(this.station.id, 10)
+      : this.station.id;
+
+    const bookingData = {
+      stationId,
+      startTime: startDateTime.toISOString(),
+      endTime: endDateTime.toISOString(),
+    };
+
+    console.log('Booking data to send:', bookingData);
+    console.log('Start date valid?', !isNaN(startDateTime.getTime()));
+    console.log('End date valid?', !isNaN(endDateTime.getTime()));
+
     this.bookingsService
-      .create({
-        stationId: this.station.id,
-        startTime: startDateTime.toISOString(),
-        endTime: endDateTime.toISOString(),
-        energyRequested,
-      })
+      .create(bookingData)
       .subscribe({
         next: (booking) => {
           this.snackBar.open('Réservation créée avec succès !', 'Fermer', {
@@ -388,6 +415,7 @@ export class BookingCreateComponent implements OnInit {
         },
         error: (err) => {
           this.isSubmitting = false;
+          console.error('Booking error:', err);
           const message = err.error?.message || 'Erreur lors de la réservation';
           this.snackBar.open(message, 'Fermer', { duration: 5000 });
         },

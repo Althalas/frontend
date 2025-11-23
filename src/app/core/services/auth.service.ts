@@ -2,19 +2,10 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { environment } from '@env/environment';
+import { User, UserRole } from '@core/models/user.model';
 
-interface User {
-  id: number;
-  email: string;
-  firstName: string;
-  lastName: string;
-  role: 'client' | 'owner' | 'admin';
-  phone?: string;
-  address?: string;
-  postalCode?: string;
-  city?: string;
-  birthDate?: string;
-}
+// Export User and UserRole for use in other components
+export { User, UserRole } from '@core/models/user.model';
 
 interface AuthResponse {
   accessToken: string;
@@ -69,17 +60,17 @@ export class AuthService {
 
   isAdmin(): boolean {
     const user = this.getCurrentUser();
-    return user?.role === 'admin';
+    return user?.roles?.includes('admin') || false;
   }
 
   isOwner(): boolean {
     const user = this.getCurrentUser();
-    return user?.role === 'owner';
+    return user?.roles?.includes('owner') || false;
   }
 
   isClient(): boolean {
     const user = this.getCurrentUser();
-    return user?.role === 'client' || user?.role === 'owner'; // owner peut aussi être client
+    return user?.roles?.includes('client') || user?.roles?.includes('owner') || false;
   }
 
   private handleAuth(res: AuthResponse): void {
@@ -87,5 +78,19 @@ export class AuthService {
     localStorage.setItem('refreshToken', res.refreshToken);
     localStorage.setItem('user', JSON.stringify(res.user));
     this.currentUserSubject.next(res.user);
+  }
+
+  refreshProfile(): Observable<User> {
+    return this.http.get<User>(`${environment.apiUrl}/users/me`).pipe(
+      tap((user) => {
+        const currentUser = this.currentUserSubject.value;
+        if (currentUser) {
+          // Merge existing data (like tokens) with new user data if needed, 
+          // but here we just update the user object in storage/subject
+          localStorage.setItem('user', JSON.stringify(user));
+          this.currentUserSubject.next(user);
+        }
+      })
+    );
   }
 }

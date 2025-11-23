@@ -9,6 +9,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { BookingsService, Booking } from '@core/services/bookings.service';
+import { getStationAddress } from '@core/services/stations.service';
 
 @Component({
   selector: 'app-booking-detail',
@@ -35,7 +36,7 @@ import { BookingsService, Booking } from '@core/services/bookings.service';
         <button mat-icon-button routerLink="/bookings">
           <mat-icon>arrow_back</mat-icon>
         </button>
-        <h1>Réservation #{{ booking.id.slice(0, 8) }}</h1>
+        <h1>Réservation #{{ booking.id }}</h1>
         <mat-chip [ngClass]="'status-' + booking.status.toLowerCase()">
           {{ getStatusLabel(booking.status) }}
         </mat-chip>
@@ -46,7 +47,7 @@ import { BookingsService, Booking } from '@core/services/bookings.service';
           <mat-card-header>
             <mat-icon mat-card-avatar>ev_station</mat-icon>
             <mat-card-title>{{ booking.station?.name || 'Borne' }}</mat-card-title>
-            <mat-card-subtitle>{{ booking.station?.address }}</mat-card-subtitle>
+            <mat-card-subtitle>{{ booking.station ? getStationAddressHelper(booking.station) : '' }}</mat-card-subtitle>
           </mat-card-header>
           <mat-card-content>
             <div class="info-grid">
@@ -70,14 +71,6 @@ import { BookingsService, Booking } from '@core/services/bookings.service';
               </div>
 
               <div class="info-item">
-                <mat-icon>bolt</mat-icon>
-                <div>
-                  <strong>Énergie demandée</strong>
-                  <p>{{ booking.energyRequested }} kWh</p>
-                </div>
-              </div>
-
-              <div class="info-item">
                 <mat-icon>payments</mat-icon>
                 <div>
                   <strong>Montant total</strong>
@@ -87,7 +80,7 @@ import { BookingsService, Booking } from '@core/services/bookings.service';
             </div>
           </mat-card-content>
 
-          @if (booking.status === 'PENDING' || booking.status === 'CONFIRMED') {
+          @if (booking.status === 'pending' || booking.status === 'accepted') {
           <mat-card-actions>
             <button
               mat-raised-button
@@ -116,24 +109,24 @@ import { BookingsService, Booking } from '@core/services/bookings.service';
                 </div>
               </div>
 
-              @if (booking.status !== 'PENDING' && booking.status !== 'CANCELLED')
+              @if (booking.status === 'accepted')
               {
               <div class="timeline-item completed">
                 <mat-icon>check_circle</mat-icon>
                 <div>
-                  <strong>Paiement confirmé</strong>
-                  <p>Réservation validée</p>
+                  <strong>Réservation acceptée</strong>
+                  <p>Le propriétaire a accepté votre réservation</p>
                 </div>
               </div>
-              } @if (booking.status === 'IN_PROGRESS') {
-              <div class="timeline-item active">
-                <mat-icon>electric_car</mat-icon>
+              } @if (booking.status === 'refused') {
+              <div class="timeline-item cancelled">
+                <mat-icon>cancel</mat-icon>
                 <div>
-                  <strong>Charge en cours</strong>
-                  <p>Session active</p>
+                  <strong>Réservation refusée</strong>
+                  <p>Le propriétaire a refusé la réservation</p>
                 </div>
               </div>
-              } @if (booking.status === 'COMPLETED') {
+              } @if (booking.status === 'completed') {
               <div class="timeline-item completed">
                 <mat-icon>check_circle</mat-icon>
                 <div>
@@ -141,7 +134,7 @@ import { BookingsService, Booking } from '@core/services/bookings.service';
                   <p>Session complétée avec succès</p>
                 </div>
               </div>
-              } @if (booking.status === 'CANCELLED') {
+              } @if (booking.status === 'cancelled') {
               <div class="timeline-item cancelled">
                 <mat-icon>cancel</mat-icon>
                 <div>
@@ -154,7 +147,7 @@ import { BookingsService, Booking } from '@core/services/bookings.service';
           </mat-card-content>
         </mat-card>
 
-        @if (booking.status === 'COMPLETED') {
+        @if (booking.status === 'completed') {
         <mat-card class="review-card">
           <mat-card-header>
             <mat-card-title>Votre avis</mat-card-title>
@@ -294,14 +287,14 @@ import { BookingsService, Booking } from '@core/services/bookings.service';
         color: #e65100 !important;
       }
 
-      .status-confirmed {
+      .status-accepted {
         background-color: #e3f2fd !important;
         color: #1565c0 !important;
       }
 
-      .status-in_progress {
-        background-color: #e8f5e9 !important;
-        color: #2e7d32 !important;
+      .status-refused {
+        background-color: #ffebee !important;
+        color: #c62828 !important;
       }
 
       .status-completed {
@@ -310,8 +303,8 @@ import { BookingsService, Booking } from '@core/services/bookings.service';
       }
 
       .status-cancelled {
-        background-color: #ffebee !important;
-        color: #c62828 !important;
+        background-color: #ffcdd2 !important;
+        color: #b71c1c !important;
       }
 
       @media (max-width: 600px) {
@@ -335,11 +328,11 @@ export class BookingDetailComponent implements OnInit {
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
-      this.loadBooking(id);
+      this.loadBooking(Number(id));
     }
   }
 
-  loadBooking(id: string): void {
+  loadBooking(id: number): void {
     this.bookingsService.getById(id).subscribe({
       next: (booking) => {
         this.booking = booking;
@@ -354,13 +347,17 @@ export class BookingDetailComponent implements OnInit {
 
   getStatusLabel(status: string): string {
     const labels: Record<string, string> = {
-      PENDING: 'En attente',
-      CONFIRMED: 'Confirmée',
-      IN_PROGRESS: 'En cours',
-      COMPLETED: 'Terminée',
-      CANCELLED: 'Annulée',
+      pending: 'En attente',
+      accepted: 'Acceptée',
+      refused: 'Refusée',
+      completed: 'Terminée',
+      cancelled: 'Annulée',
     };
     return labels[status] || status;
+  }
+
+  getStationAddressHelper(station: any): string {
+    return getStationAddress(station);
   }
 
   cancelBooking(): void {

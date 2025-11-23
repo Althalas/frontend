@@ -16,10 +16,24 @@ export const STATIONS_ROUTES: Routes = [
       ),
   },
   {
+    path: 'new',
+    loadComponent: () =>
+      import('./pages/station-form/station-form.component').then(
+        (m) => m.StationFormComponent
+      ),
+  },
+  {
     path: ':id',
     loadComponent: () =>
       import('./pages/station-detail/station-detail.component').then(
         (m) => m.StationDetailComponent
+      ),
+  },
+  {
+    path: ':id/edit',
+    loadComponent: () =>
+      import('./pages/station-form/station-form.component').then(
+        (m) => m.StationFormComponent
       ),
   },
 ];
